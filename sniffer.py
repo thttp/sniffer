@@ -2,12 +2,20 @@ import pyfiglet
 import time
 import sys
 from colorama import Fore, Style
+import psutil
 from scapy.all import sniff, Ether, IP, TCP, UDP, wrpcap
 
 banner = pyfiglet.figlet_format("SNIFFER")
 print(Fore.LIGHTGREEN_EX + banner + Style.RESET_ALL)
 
-print(Fore.LIGHTGREEN_EX + "Network Sniffer\n" + Style.RESET_ALL)
+def typewriter_effect(text, delay=0.1):
+    for char in text:
+        sys.stdout.write(Fore.LIGHTGREEN_EX + char + Style.RESET_ALL)
+        sys.stdout.flush()
+        time.sleep(delay)
+    print()
+
+typewriter_effect("Network Sniffer\n")
 
 def loading_animation(text="[*] Starting sniffer on interface"):
     for _ in range(3): 
@@ -49,7 +57,6 @@ def packet_callback(packet):
 
 def start_sniffer(interface, count, protocol, output_file):
     loading_animation(f"[*] Starting sniffer on interface {interface}")
-
     time.sleep(2)
 
     filter_proto = None
@@ -66,17 +73,63 @@ def start_sniffer(interface, count, protocol, output_file):
         wrpcap(output_file, packets)
         print(Fore.LIGHTGREEN_EX + f"\nPacotes salvos em: {output_file}" + Style.RESET_ALL)
 
-def menu():
-    interface = input("Digite a interface de rede: ")
-    
-    count_input = input("Número de pacotes a capturar: ")
-    count = int(count_input) if count_input.strip() else 0
-    
-    protocol = input("Filtrar por protocolo: ")
-    output_file = input("Salvar pacotes em arquivo: ")
+def listar_interfaces():
+    interfaces = psutil.net_if_addrs()
+    return [interface for interface in interfaces]
 
-    start_sniffer(interface, count, protocol, output_file if output_file else None)
+def menu():
+    interface_list = []  
+    count = 0
+    protocol = ''
+    output_file = None
+    interface = None
+    
+    while True:
+        print(Fore.GREEN + "[1] " + Style.RESET_ALL + "Executar")
+        print(Fore.LIGHTGREEN_EX + "[2] " + Style.RESET_ALL + "Filtrar por Interface")
+        print(Fore.LIGHTGREEN_EX + "[3] " + Style.RESET_ALL + "Limitar Pacotes")
+        print(Fore.LIGHTGREEN_EX + "[4] " + Style.RESET_ALL + "Filtrar Protocolos")
+        print(Fore.LIGHTGREEN_EX + "[5] " + Style.RESET_ALL + "Salvar Pacotes em Arquivo")
+        print(Fore.GREEN + "[6] " + Style.RESET_ALL + "Sair")
+        
+        choice = input()
+
+        if choice == '1':
+            if interface:
+                start_sniffer(interface, count, protocol, output_file)
+            else:
+                print(Fore.RED + "Selecione uma interface antes de começar!" + Style.RESET_ALL)
+
+        elif choice == '2':
+            interface_list = listar_interfaces()  
+            print(Fore.LIGHTGREEN_EX + "Escolha uma interface:" + Style.RESET_ALL)
+            for idx, interface in enumerate(interface_list):
+                print(Fore.LIGHTGREEN_EX + f"[{idx+1}] " + Style.RESET_ALL + f"{interface}")
+            interface_choice = int(input()) - 1
+            interface = interface_list[interface_choice] if 0 <= interface_choice < len(interface_list) else None
+            if interface:
+                print(Fore.LIGHTGREEN_EX + f"Interface selecionada: {interface}" + Style.RESET_ALL)
+            else:
+                print(Fore.RED + "Opção inválida!" + Style.RESET_ALL)
+
+        elif choice == '3':
+            count_input = input("Quantidade de pacotes: ")
+            count = int(count_input) if count_input.strip() else 0
+            print(Fore.LIGHTGREEN_EX + f"Limite de pacotes definido: {count}" + Style.RESET_ALL)
+
+        elif choice == '4':
+            protocol = input("Filtrar por protocolo (tcp/udp/icmp): ")
+            print(Fore.LIGHTGREEN_EX + f"Filtro de protocolo definido: {protocol}" + Style.RESET_ALL)
+
+        elif choice == '5':
+            output_file = input("Salvar pacotes em arquivo: ")
+            print(Fore.LIGHTGREEN_EX + f"Arquivo de saída definido: {output_file}" + Style.RESET_ALL)
+
+        elif choice == '6':
+            print(Fore.GREEN + "Saindo..." + Style.RESET_ALL)
+            break
+        else:
+            print("Opção inválida. Tente novamente.")
 
 if __name__ == "__main__":
     menu()
-
