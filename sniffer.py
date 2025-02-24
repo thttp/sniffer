@@ -1,10 +1,11 @@
 import pyfiglet
 import time
 import sys
-from colorama import Fore, Style
 import psutil
+from colorama import Fore, Style
 from scapy.all import sniff, Ether, IP, TCP, UDP, wrpcap
 
+# Exibir banner
 banner = pyfiglet.figlet_format("SNIFFER")
 print(Fore.LIGHTGREEN_EX + banner + Style.RESET_ALL)
 
@@ -17,6 +18,7 @@ def typewriter_effect(text, delay=0.1):
 
 typewriter_effect("Network Sniffer\n")
 
+# Função para animação de carregamento
 def loading_animation(text="[*] Starting sniffer on interface"):
     for _ in range(3): 
         sys.stdout.write(Fore.LIGHTGREEN_EX + f"\r{text} .  " + Style.RESET_ALL)
@@ -28,8 +30,9 @@ def loading_animation(text="[*] Starting sniffer on interface"):
         sys.stdout.write(Fore.LIGHTGREEN_EX + f"\r{text} ..." + Style.RESET_ALL)
         sys.stdout.flush()
         time.sleep(0.5)
-    print() 
+    print()
 
+# Função para exibir informações do pacote capturado
 def packet_callback(packet):
     print("=" * 50)
     
@@ -55,8 +58,10 @@ def packet_callback(packet):
         print(f"   |- Source Port: {packet[UDP].sport}")
         print(f"   |- Destination Port: {packet[UDP].dport}")
 
+# Função para iniciar o sniffer
 def start_sniffer(interface, count, protocol, output_file):
     loading_animation(f"[*] Starting sniffer on interface {interface}")
+
     time.sleep(2)
 
     filter_proto = None
@@ -73,26 +78,28 @@ def start_sniffer(interface, count, protocol, output_file):
         wrpcap(output_file, packets)
         print(Fore.LIGHTGREEN_EX + f"\nPacotes salvos em: {output_file}" + Style.RESET_ALL)
 
+# Função para listar interfaces disponíveis
 def listar_interfaces():
     interfaces = psutil.net_if_addrs()
-    return [interface for interface in interfaces]
+    return list(interfaces.keys())
 
+# Menu de opções
 def menu():
-    interface_list = []  
+    interface_list = []
     count = 0
     protocol = ''
     output_file = None
     interface = None
-    
+
     while True:
-        print(Fore.GREEN + "[1] " + Style.RESET_ALL + "Executar")
-        print(Fore.LIGHTGREEN_EX + "[2] " + Style.RESET_ALL + "Filtrar por Interface")
-        print(Fore.LIGHTGREEN_EX + "[3] " + Style.RESET_ALL + "Limitar Pacotes")
-        print(Fore.LIGHTGREEN_EX + "[4] " + Style.RESET_ALL + "Filtrar Protocolos")
-        print(Fore.LIGHTGREEN_EX + "[5] " + Style.RESET_ALL + "Salvar Pacotes em Arquivo")
+        print(Fore.GREEN + "[1] " + Style.RESET_ALL + "Executar", end="  ")
+        print(Fore.LIGHTGREEN_EX + "[2] " + Style.RESET_ALL + "Filtrar por Interface", end="  ")
+        print(Fore.LIGHTGREEN_EX + "[3] " + Style.RESET_ALL + "Limitar Pacotes", end="  ")
+        print(Fore.LIGHTGREEN_EX + "[4] " + Style.RESET_ALL + "Filtrar Protocolos", end="  ")
+        print(Fore.LIGHTGREEN_EX + "[5] " + Style.RESET_ALL + "Salvar Pacotes em Arquivo", end="  ")
         print(Fore.GREEN + "[6] " + Style.RESET_ALL + "Sair")
-        
-        choice = input()
+
+        choice = input("\n")
 
         if choice == '1':
             if interface:
@@ -101,8 +108,8 @@ def menu():
                 print(Fore.RED + "Selecione uma interface antes de começar!" + Style.RESET_ALL)
 
         elif choice == '2':
-            interface_list = listar_interfaces()  
-            print(Fore.LIGHTGREEN_EX + "Escolha uma interface:" + Style.RESET_ALL)
+            interface_list = listar_interfaces()
+            print(Fore.LIGHTGREEN_EX + "Interfaces disponíveis:" + Style.RESET_ALL)
             for idx, interface in enumerate(interface_list):
                 print(Fore.LIGHTGREEN_EX + f"[{idx+1}] " + Style.RESET_ALL + f"{interface}")
             interface_choice = int(input()) - 1
@@ -126,7 +133,7 @@ def menu():
             print(Fore.LIGHTGREEN_EX + f"Arquivo de saída definido: {output_file}" + Style.RESET_ALL)
 
         elif choice == '6':
-            print(Fore.GREEN + "Saindo..." + Style.RESET_ALL)
+            print(Fore.BLUE + "Saindo..." + Style.RESET_ALL)
             break
         else:
             print("Opção inválida. Tente novamente.")
