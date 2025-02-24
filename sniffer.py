@@ -5,7 +5,6 @@ import psutil
 from colorama import Fore, Style
 from scapy.all import sniff, Ether, IP, TCP, UDP, wrpcap
 
-# Exibir banner
 banner = pyfiglet.figlet_format("SNIFFER")
 print(Fore.LIGHTGREEN_EX + banner + Style.RESET_ALL)
 
@@ -18,7 +17,6 @@ def typewriter_effect(text, delay=0.1):
 
 typewriter_effect("Network Sniffer\n")
 
-# Função para animação de carregamento
 def loading_animation(text="[*] Starting sniffer on interface"):
     for _ in range(3): 
         sys.stdout.write(Fore.LIGHTGREEN_EX + f"\r{text} .  " + Style.RESET_ALL)
@@ -32,33 +30,65 @@ def loading_animation(text="[*] Starting sniffer on interface"):
         time.sleep(0.5)
     print()
 
-# Função para exibir informações do pacote capturado
 def packet_callback(packet):
-    print("=" * 50)
+    line_color = Fore.LIGHTGREEN_EX 
+    content_color = Fore.LIGHTYELLOW_EX 
+    flags_color = Fore.LIGHTRED_EX
+
+    print(f"\n{line_color}╒═[{time.strftime('%H:%M:%S')}]═{'═'*50}{Style.RESET_ALL}")
     
+    if not hasattr(packet_callback, "count"):
+        packet_callback.count = 0
+    packet_callback.count += 1
+    print(f"{line_color}│ Packet #{packet_callback.count}{Style.RESET_ALL}")
+
+    summary = []
+    if IP in packet:
+        summary.append(f"{packet[IP].src} → {packet[IP].dst}")
+    if TCP in packet:
+        summary.append(f"TCP {packet[TCP].sport} → {packet[TCP].dport}")
+    elif UDP in packet:
+        summary.append(f"UDP {packet[UDP].sport} → {packet[UDP].dport}")
+    
+    if summary:
+        print(f"{line_color}│ {' | '.join(summary)}{Style.RESET_ALL}")
+    
+    print(f"{line_color}╞═{'═'*60}{Style.RESET_ALL}")
+
     if Ether in packet:
-        print(Fore.LIGHTGREEN_EX + "[+] Ethernet Frame:" + Style.RESET_ALL)
-        print(f"   |- Source MAC: {packet[Ether].src}")
-        print(f"   |- Destination MAC: {packet[Ether].dst}")
+        print(f"{content_color}├─ Ethernet Frame{Style.RESET_ALL}")
+        print(f"{content_color}│  Source: {packet[Ether].src:20} Destination: {packet[Ether].dst}{Style.RESET_ALL}")
 
     if IP in packet:
-        print(Fore.LIGHTGREEN_EX + "[+] IP Packet:" + Style.RESET_ALL)
-        print(f"   |- Source IP: {packet[IP].src}")
-        print(f"   |- Destination IP: {packet[IP].dst}")
-        print(f"   |- Protocol: {packet[IP].proto}")
+        print(f"{content_color}├─ IP Packet{Style.RESET_ALL}")
+        print(f"{content_color}│  Version: {packet[IP].version}   TTL: {packet[IP].ttl}{Style.RESET_ALL}")
+        print(f"{content_color}│  Source: {packet[IP].src:20} Destination: {packet[IP].dst}{Style.RESET_ALL}")
 
     if TCP in packet:
-        print(Fore.LIGHTGREEN_EX + "[+] TCP Segment:" + Style.RESET_ALL)
-        print(f"   |- Source Port: {packet[TCP].sport}")
-        print(f"   |- Destination Port: {packet[TCP].dport}")
-        print(f"   |- Flags: {packet[TCP].flags}")
+        print(f"{content_color}├─ TCP Segment{Style.RESET_ALL}")
+        print(f"{content_color}│  Sport: {packet[TCP].sport:<5} Dport: {packet[TCP].dport:<5}{Style.RESET_ALL}")
+        print(f"{flags_color}│  Flags: {parse_tcp_flags(packet[TCP].flags)}{Style.RESET_ALL}")
 
-    if UDP in packet:
-        print(Fore.LIGHTGREEN_EX + "[+] UDP Datagram:" + Style.RESET_ALL)
-        print(f"   |- Source Port: {packet[UDP].sport}")
-        print(f"   |- Destination Port: {packet[UDP].dport}")
+    elif UDP in packet:
+        print(f"{content_color}├─ UDP Datagram{Style.RESET_ALL}")
+        print(f"{content_color}│  Sport: {packet[UDP].sport:<5} Dport: {packet[UDP].dport}{Style.RESET_ALL}")
 
-# Função para iniciar o sniffer
+    print(f"{line_color}├─ Packet Size: {len(packet)} bytes{Style.RESET_ALL}")
+    print(f"{line_color}╘═{'═'*60}{Style.RESET_ALL}\n")
+
+def parse_tcp_flags(flags):
+    flag_names = {
+        'F': 'FIN',
+        'S': 'SYN',
+        'R': 'RST',
+        'P': 'PUSH',
+        'A': 'ACK',
+        'U': 'URG',
+        'E': 'ECE',
+        'C': 'CWR'
+    }
+    return ', '.join([flag_names.get(flag, flag) for flag in str(flags)])
+
 def start_sniffer(interface, count, protocol, output_file):
     loading_animation(f"[*] Starting sniffer on interface {interface}")
 
@@ -78,12 +108,10 @@ def start_sniffer(interface, count, protocol, output_file):
         wrpcap(output_file, packets)
         print(Fore.LIGHTGREEN_EX + f"\nPacotes salvos em: {output_file}" + Style.RESET_ALL)
 
-# Função para listar interfaces disponíveis
 def listar_interfaces():
     interfaces = psutil.net_if_addrs()
     return list(interfaces.keys())
 
-# Menu de opções
 def menu():
     interface_list = []
     count = 0
@@ -133,7 +161,11 @@ def menu():
             print(Fore.LIGHTGREEN_EX + f"Arquivo de saída definido: {output_file}" + Style.RESET_ALL)
 
         elif choice == '6':
-            print(Fore.BLUE + "Saindo..." + Style.RESET_ALL)
+            print(Fore.LIGHTGREEN_EX + "Saindo", end="", flush=True)
+            for _ in range(3):  
+                time.sleep(0.5)
+                print(Fore.LIGHTGREEN_EX + ".", end="", flush=True)
+            print(Style.RESET_ALL)
             break
         else:
             print("Opção inválida. Tente novamente.")
