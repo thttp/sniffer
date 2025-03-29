@@ -1,0 +1,4 @@
+pyfiglet
+psutil
+colorama
+scapy
